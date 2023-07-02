@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -113,9 +114,9 @@ class Conv2DBlock_S(nn.Module):
         
         super(Conv2DBlock_S, self).__init__()
         
-        self.preprocess = nn.Sequential()
+        self.normalizer = None
         if not is_first_block:
-            self.preprocess = nn.Sequential(
+            self.normalizer = nn.Sequential(
                 nn.BatchNorm2d(num_features=in_channels),
                 nn.SELU(inplace=True)
             )
@@ -127,7 +128,7 @@ class Conv2DBlock_S(nn.Module):
             nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(2, 3), padding=(0, 1), stride=1),
         )        
         
-        self.downsampler = nn.Sequential()
+        self.downsampler = None
         if in_channels != out_channels:
             self.downsampler = nn.Sequential(
                 nn.Conv2d(in_channels=in_channels, out_channels=out_channels, padding=(0, 1), kernel_size=(1, 3), stride=1)
@@ -136,12 +137,15 @@ class Conv2DBlock_S(nn.Module):
         self.pooling = nn.MaxPool2d(kernel_size=(1, 6))
         
     def forward(self, x):
+        
         identity = x
+        if self.downsampler is not None:
+            identity = self.downsampler(identity)
         
-        x = self.preprocess(x)
+        if self.normalizer is not None:
+            x = self.normalizer(x)
+            
         x = self.layers(x)
-        
-        identity = self.downsampler(identity)
         x = x + identity
         
         x = self.pooling(x)
@@ -166,9 +170,9 @@ class Conv2DBlock_L(nn.Module):
         
         super(Conv2DBlock_L, self).__init__()
         
-        self.preprocess = nn.Sequential()
+        self.normalizer = None
         if not is_first_block:
-            self.preprocess = nn.Sequential(
+            self.normalizer = nn.Sequential(
                 nn.BatchNorm2d(num_features=in_channels),
                 nn.SELU(inplace=True)
             )
@@ -180,7 +184,7 @@ class Conv2DBlock_L(nn.Module):
             nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(2, 3), padding=(0, 1), stride=1),
         )        
         
-        self.downsampler = nn.Sequential()
+        self.downsampler = None
         if in_channels != out_channels:
             self.downsampler = nn.Sequential(
                 nn.Conv2d(in_channels=in_channels, out_channels=out_channels, padding=(0, 1), kernel_size=(1, 3), stride=1)
@@ -189,12 +193,15 @@ class Conv2DBlock_L(nn.Module):
         self.pooling = nn.MaxPool2d(kernel_size=(1, 3))
         
     def forward(self, x):
+        
         identity = x
+        if self.downsampler is not None:
+            identity = self.downsampler(identity)
         
-        x = self.preprocess(x)
+        if self.normalizer is not None:
+            x = self.normalizer(x)
+            
         x = self.layers(x)
-        
-        identity = self.downsampler(identity)
         x = x + identity
         
         x = self.pooling(x)
@@ -217,6 +224,88 @@ class SELayer(nn.Module):
         y = self.fc(y).view(b, c, 1, 1)
         return x * y
         
+class Conv2DBlock_SE(nn.Module):
+    
+    def __init__(self, in_channels: int, out_channels: int, scale:int = 4, channel_reduction:int=4):
+        super(Conv2DBlock_SE, self).__init__()
+        
+        self.scale = scale
+        self.sub_channels = out_channels // scale
+        self.hidden_channels = self.sub_channels * scale
+        relu = nn.ReLU(inplace=True)
+        
+        
+        self.normalizer = nn.Sequential(
+            nn.BatchNorm2d(num_features=in_channels),
+            nn.SELU(inplace=True)
+        )
+        
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=self.hidden_channels, kernel_size=(1, 1)),
+            nn.BatchNorm2d(num_features=self.hidden_channels),
+            relu
+        )
+        
+        self.conv2 = []
+        for i in range(2, scale+1):
+            self.conv2.append(nn.Sequential(
+                nn.Conv2d(in_channels=self.sub_channels, out_channels=self.sub_channels, kernel_size=(3, 7), padding=(1, 3)),
+                nn.BatchNorm2d(num_features=self.sub_channels),
+                relu
+            ))
+        self.conv2 = nn.ModuleList(self.conv2)
+            
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=self.hidden_channels, out_channels=out_channels, kernel_size=(1, 1)),
+            nn.BatchNorm2d(num_features=out_channels),
+            relu
+        )
+        
+        self.se_module = SELayer(channels=out_channels, channel_reduction=channel_reduction)
+        
+        self.downsampler = None
+        if in_channels != out_channels:
+            self.downsampler = nn.Sequential(
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, padding=(0, 1), kernel_size=(1, 3), stride=1)
+            )
+            
+        self.pooling = nn.MaxPool2d(kernel_size=(1, 6))
+        
+        
+    def forward(self, x):
+        
+        identity = x
+        if self.downsampler is not None:
+            identity = self.downsampler(identity)
+            
+        x = self.normalizer(x)
+        
+        x = self.conv1(x)
+        
+        x_sub = torch.split(x, split_size_or_sections=self.sub_channels, dim = 1)
+        y_sub = [x_sub[0]]
+        
+        for i in range(1, self.scale):
+            y_i = None
+            if i == 1:
+                y_i = self.conv2[i - 1](x_sub[i])
+            else:
+                y_i = self.conv2[i - 1](x_sub[i] + y_sub[i-1])
+                
+            y_sub.append(y_i)
+        
+        y = torch.cat(y_sub, dim = 1)
+        y = self.conv3(y)
+        y = self.se_module(y)
+        
+        y = y + identity
+        y = self.pooling(y)
+        
+        return y
+        
+        
+        
+    
 class Frontend_S(nn.Module):
     """_summary_
     This is frontend of Rawformer-S
@@ -317,10 +406,61 @@ class Frontend_L(nn.Module):
         HFM = self.conv_blocks(LFM)
         
         return HFM
+    
+class Frontend_SE(nn.Module):
+    """_summary_
+    This is frontend of SE-Rawformer
+    """
+    
+    def __init__(self, sinc_kernel_size=128, sample_rate=16000):
+        """_summary_
+        frontend of Rawformer-S\\
+            
+        N: number of conv2D-based blocks\\
+        N is fixed to 4.
+        
+        C: output channel of front-end\\
+        C is fixed to 64
+        
+        f: frequency \\
+        f is fixed to 23
+        
+        t: number of temporal bins\\
+        for 4 sec, t is 16. for 10 sec, t is 73\\
+        
+        Args:
+            sinc_kernel_size (int, optional): kernel size of sinc layer. Defaults to 128.
+            sample_rate (int, optional): _description_. Defaults to 16000.
+        """
+        super(Frontend_SE, self).__init__()
+        
+        self.sinc_layer = SincConv(in_channels=1, out_channels=70, kernel_size=sinc_kernel_size, sample_rate=sample_rate)
+        self.bn = nn.BatchNorm2d(num_features=1) 
+        self.selu = nn.SELU(inplace=True)
+        
+        self.conv_blocks = nn.Sequential(
+            Conv2DBlock_S(in_channels=1, out_channels=32, is_first_block=True),
+            Conv2DBlock_SE(in_channels=32, out_channels=32),
+            Conv2DBlock_SE(in_channels=32, out_channels=64),
+            Conv2DBlock_SE(in_channels=64, out_channels=64),            
+        )
+    
+    def forward(self, x):
+        
+        x = x.unsqueeze(dim=1)
+        x = self.sinc_layer(x)
+        x = x.unsqueeze(dim=1)
+        x = F.max_pool2d(torch.abs(x), (3, 3))
+        x = self.bn(x)
+        LFM = self.selu(x)
+        
+        HFM = self.conv_blocks(LFM)
+        
+        return HFM
         
 
 if __name__ == "__main__":
     from torchinfo import summary
     #model = SincConv(1, 3).to("cuda:0")
-    model = Frontend_S().to("cuda:0")
+    model = Frontend_SE().to("cuda:0")
     summary(model, (2, 16000*4))
