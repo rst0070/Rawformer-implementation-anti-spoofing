@@ -226,7 +226,7 @@ class SELayer(nn.Module):
         
 class Conv2DBlock_SE(nn.Module):
     
-    def __init__(self, in_channels: int, out_channels: int, scale:int = 4, channel_reduction:int=4):
+    def __init__(self, in_channels: int, out_channels: int, scale:int = 8, channel_reduction:int=8):
         super(Conv2DBlock_SE, self).__init__()
         
         self.scale = scale
@@ -241,7 +241,7 @@ class Conv2DBlock_SE(nn.Module):
         )
         
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=self.hidden_channels, kernel_size=(1, 1)),
+            nn.Conv2d(in_channels=in_channels, out_channels=self.hidden_channels, kernel_size=(1, 7), padding=(0, 3)),
             nn.BatchNorm2d(num_features=self.hidden_channels),
             relu
         )
@@ -256,7 +256,7 @@ class Conv2DBlock_SE(nn.Module):
         self.conv2 = nn.ModuleList(self.conv2)
             
         self.conv3 = nn.Sequential(
-            nn.Conv2d(in_channels=self.hidden_channels, out_channels=out_channels, kernel_size=(1, 1)),
+            nn.Conv2d(in_channels=self.hidden_channels, out_channels=out_channels, kernel_size=(1, 7), padding=(0, 3)),
             nn.BatchNorm2d(num_features=out_channels),
             relu
         )
@@ -266,10 +266,11 @@ class Conv2DBlock_SE(nn.Module):
         self.downsampler = None
         if in_channels != out_channels:
             self.downsampler = nn.Sequential(
-                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, padding=(0, 1), kernel_size=(1, 3), stride=1)
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, padding=(0, 3), kernel_size=(1, 7), stride=1)
             )
             
         self.pooling = nn.MaxPool2d(kernel_size=(1, 6))
+        #self.pooling = nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(1, 6), padding=(0, 0), )
         
         
     def forward(self, x):

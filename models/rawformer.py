@@ -6,6 +6,9 @@ from classifier import RawformerClassifier
 
 
 class Rawformer_S(nn.Module):
+    """
+    
+    """
     
     def __init__(self, device, sample_rate: int = 16000):
         super(Rawformer_S, self).__init__()
@@ -45,7 +48,7 @@ class Rawformer_SE(nn.Module):
         
         self.positional_embedding = PositionalAggregator1D(max_C = 64, max_ft=23*16, device=device)# this max_ft is for input of 4-sec and 16000 sample-rate
         
-        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=64)# output: [batch, C]
+        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=2048)# output: [batch, C]
         
     def forward(self, x):        
         x = self.front_end(x)
@@ -55,7 +58,7 @@ class Rawformer_SE(nn.Module):
     
 if __name__ == "__main__":
     from torchinfo import summary
-    from fvcore.nn import FlopCountAnalysis
+    #from fvcore.nn import FlopCountAnalysis
     
     model = Rawformer_SE(device="cpu").to("cpu")
     summary(model, (2, 16000*4), device="cpu")

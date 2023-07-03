@@ -33,10 +33,10 @@ class PositionalAggregator1D(nn.Module):
 if __name__ == "__main__":
     from torchinfo import summary
     #model = SincConv(1, 3).to("cuda:0")
-    model = PositionalAggregator1D(64, 73*23, "cuda:0").to("cuda:0")
+    model = PositionalAggregator1D(64, 23*16, "cuda:0").to("cuda:0")
     # x = torch.ones((1, 2, 2, 2), device="cuda:0")
     # print(x)
     # x = model(x)
     # print(x)
-    summary(model, (2, 64, 23, 29))
+    summary(model, (2, 64, 23, 16))
         

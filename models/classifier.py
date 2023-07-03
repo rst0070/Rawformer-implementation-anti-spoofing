@@ -98,13 +98,13 @@ class FFN(nn.Module):
     
 class TransformerEncoderLayer(nn.Module):
     
-    def __init__(self, d_model=512, n_head=8, ffn_hidden=2048, drop_prob=0.1):
+    def __init__(self, d_model=64, n_head=8, ffn_hidden=2048, drop_prob=0.1):
         """_summary_
         input size: [batch, seq_length, d_model]
         
         Args:
             d_model (int, optional): dimension of this model.
-            the length of each embedding of sequence. Defaults to 512.
+            the length of each embedding of sequence. Defaults to 64.
             
             n_head (int, optional): number of attention heads. Defaults to 8.
             ffn_hidden (int, optional): hidden size of ffn layer. Defaults to 2048.
@@ -141,12 +141,15 @@ class SequencePooling(nn.Module):
     Li, Changtao, Feiran Yang, and Jun Yang. 
     "The Role of Long-Term Dependency in Synthetic Speech Detection." 
     IEEE Signal Processing Letters 29 (2022): 1142-1146.
-    
-    Args:
-        nn (_type_): _description_
     """
     
     def __init__(self, d_model):
+        """_summary_
+        [batch_size, ]
+        Args:
+            d_model (_type_): dimension of transformer encoder. 
+            This is the dimension of each element of input sequence.
+        """
         super(SequencePooling, self).__init__()
         
         self.linear = nn.Linear(in_features=d_model, out_features=1)
@@ -164,8 +167,15 @@ class SequencePooling(nn.Module):
 class RawformerClassifier(nn.Module):
     
     def __init__(self, C:int, n_encoder:int, transformer_hidden:int):
-        super(RawformerClassifier, self).__init__()
+        """_summary_
+        [batch_size, f*t, C] -> [batch_size, 2]
         
+        Args:
+            C (int): number of channels of HFM
+            n_encoder (int): number of transformer encoder blocks. (`N` in the paper)
+            transformer_hidden (int): 
+        """
+        super(RawformerClassifier, self).__init__()
         # ------------------- encoder blocks ------------------- #
         self.encoders = OrderedDict()
         for i in range(0, n_encoder):
@@ -190,10 +200,10 @@ class RawformerClassifier(nn.Module):
 if __name__ == "__main__":
     from torchinfo import summary
     #model = SincConv(1, 3).to("cuda:0")
-    model = RawformerClassifier(C=512).to("cuda:0")
+    model = RawformerClassifier(C=64, n_encoder=3, transformer_hidden=80).to("cuda:0")
     # x = torch.ones((1, 2, 2, 2), device="cuda:0")
     # print(x)
     # x = model(x)
     # print(x)
-    summary(model, (2, 575, 512))
+    summary(model, (2, 23*29, 64))
         
