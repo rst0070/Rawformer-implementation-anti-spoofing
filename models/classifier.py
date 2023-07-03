@@ -185,7 +185,9 @@ class RawformerClassifier(nn.Module):
         # ------------------- encoder blocks ------------------- #
         self.seq_pooling = SequencePooling(d_model=C)
         # ------------------- linear layer ------------------- #
-        self.linear = nn.Linear(in_features=C, out_features=2)
+        self.linear = nn.Linear(in_features=C, out_features=1)
+        
+        self.sig = nn.Sigmoid()
         
         
     def forward(self, x):
@@ -193,7 +195,8 @@ class RawformerClassifier(nn.Module):
         x = self.encoders(x)
         x = self.seq_pooling(x)
         x = self.linear(x)
-        
+        x = self.sig(x)
+        x = x.squeeze()
         return x
         
     
