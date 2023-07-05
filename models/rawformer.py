@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from frontend import Frontend_S, Frontend_L, Frontend_SE
-from positional_aggregator import PositionalAggregator1D
-from classifier import RawformerClassifier
+from models.frontend import Frontend_S, Frontend_L, Frontend_SE
+from models.positional_aggregator import PositionalAggregator1D
+from models.classifier import RawformerClassifier
 
 
 class Rawformer_S(nn.Module):
@@ -10,13 +10,13 @@ class Rawformer_S(nn.Module):
     
     """
     
-    def __init__(self, device, sample_rate: int = 16000):
+    def __init__(self, device, transformer_hidden=64, sample_rate: int = 16000):
         super(Rawformer_S, self).__init__()
         self.front_end = Frontend_S(sinc_kernel_size=128, sample_rate=sample_rate)
         
         self.positional_embedding = PositionalAggregator1D(max_C = 64, max_ft=23*16, device=device)# this max_ft is for input of 4-sec and 16000 sample-rate
         
-        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=64)# output: [batch, C]
+        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=transformer_hidden)# output: [batch, C]
         
     def forward(self, x):        
         x = self.front_end(x)
@@ -26,13 +26,13 @@ class Rawformer_S(nn.Module):
     
 class Rawformer_L(nn.Module):
     
-    def __init__(self, device, sample_rate: int = 16000):
+    def __init__(self, device, transformer_hidden=80, sample_rate: int = 16000):
         super(Rawformer_L, self).__init__()
         self.front_end = Frontend_L(sinc_kernel_size=128, sample_rate=sample_rate)
         
         self.positional_embedding = PositionalAggregator1D(max_C=64, max_ft=23*29, device=device)# this max_ft is for input of 4-sec and 16000 sample-rate
         
-        self.classifier = RawformerClassifier(C = 64, n_encoder = 3, transformer_hidden=80)# output: [batch, C]
+        self.classifier = RawformerClassifier(C = 64, n_encoder = 3, transformer_hidden=transformer_hidden)# output: [batch, C]
         
     def forward(self, x):        
         x = self.front_end(x)
@@ -42,13 +42,13 @@ class Rawformer_L(nn.Module):
 
 class Rawformer_SE(nn.Module):
     
-    def __init__(self, device, sample_rate: int = 16000):
+    def __init__(self, device, transformer_hidden=2048, sample_rate: int = 16000):
         super(Rawformer_SE, self).__init__()
         self.front_end = Frontend_SE(sinc_kernel_size=128, sample_rate=sample_rate)
         
         self.positional_embedding = PositionalAggregator1D(max_C = 64, max_ft=23*16, device=device)# this max_ft is for input of 4-sec and 16000 sample-rate
         
-        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=2048)# output: [batch, C]
+        self.classifier = RawformerClassifier(C = 64, n_encoder = 2, transformer_hidden=transformer_hidden)# output: [batch, C]
         
     def forward(self, x):        
         x = self.front_end(x)
@@ -56,11 +56,3 @@ class Rawformer_SE(nn.Module):
         x = self.classifier(x)        
         return x
     
-if __name__ == "__main__":
-    from torchinfo import summary
-    #from fvcore.nn import FlopCountAnalysis
-    
-    model = Rawformer_SE(device="cpu").to("cpu")
-    summary(model, (2, 16000*4), device="cpu")
-    #flops = FlopCountAnalysis(model=model, inputs=torch.rand((2, 16000*4), device="cuda:0"))
-    #print(flops.total())

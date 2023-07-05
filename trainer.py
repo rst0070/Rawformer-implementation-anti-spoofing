@@ -4,11 +4,13 @@ from tqdm import tqdm
 from sklearn import metrics
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
-import wandb
+import torch.distributed as dist
+from ddp_util import all_gather
+import logger
 
 class Trainer:
     
-    def __init__(self, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, device):
+    def __init__(self, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, logger:logger.Logger, device):
         
         self.model = model
         self.loss_fn = loss_fn
@@ -16,6 +18,8 @@ class Trainer:
         
         self.train_loader = train_loader
         self.test_loader = test_loader
+        
+        self.logger = logger
         
         self.device = device
         
@@ -26,24 +30,32 @@ class Trainer:
         
         iter_count = 0
         loss_sum = 0
+        num_item_train = len(self.train_loader)
         pbar = tqdm(self.train_loader)
         for x, label in pbar:
             
             self.optimizer.zero_grad()
             
-            x, label = x.to(self.device), label.to(self.device)
+            x, label = x.to(self.device), label.float().to(self.device)
+            x = self.model(x)
             loss = self.loss_fn(x, label)
             
             loss.backward()
             self.optimizer.step()
         
             loss = loss.detach()
-            count += 1
+            iter_count += 1
             loss_sum += loss
             
-            if count == 50:
-                pbar.set_description(f'loss: {loss}')
-                wandb.log({'loss' : loss})
+            pbar.set_description(f'loss: {loss}')
+            
+            if num_item_train * 0.02 <= iter_count:
+                self.logger.wandbLog({'Loss' : loss_sum / float(iter_count)})
+                loss_sum = 0
+                iter_count = 0
+                
+            
+            
         
     def test(self):
         
@@ -53,17 +65,24 @@ class Trainer:
         labels = []
         
         pbar = tqdm(self.test_loader, 'evaluation')
-        for x, label in pbar:
+        with torch.no_grad():
+            for x, label in pbar:
             
-            score = self.model(x)
-            # score의 
-            scores.append(score)
-            labels.append(label)
+                x, label = x.to(self.device), label.float().to(self.device)
+            
+                score = self.model(x)
+
+                scores.append(score.cpu())
+                labels.append(label.cpu())
         
-        scores = torch.cat(scores, dim=0).cpu().numpy()
-        labels = torch.cat(labels, dim=0).cpu().numpy()
-        
+            scores = torch.cat(scores, dim=0)
+            labels = torch.cat(labels, dim=0)
+                    
+        scores = all_gather(scores)
+        labels = all_gather(labels)
         eer = self.calculate_EER(scores, labels)
+        
+        
         return eer
             
     def calculate_EER(self, scores, labels):

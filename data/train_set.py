@@ -17,7 +17,7 @@ class ASVspoof2019LA(data.Dataset):
         self.duration = exp_config.train_duration_sec * exp_config.sample_rate
         
         path_label_train = sys_config.path_label_asv_spoof_2019_la_train
-        path_label_dev = sys_config.path_asv_spoof_2019_la_dev
+        path_label_dev = sys_config.path_label_asv_spoof_2019_la_dev
         
         self.data_list = []
         """This contains tuples like (file_path:str, attack_type, is_real:int)"""
@@ -61,11 +61,13 @@ class ASVspoof2019LA(data.Dataset):
             tmp = [x for i in range(0, (self.duration // x_len))]
             
             residue = self.duration % x_len
-            if residue > 0: tmp.append(x[0:residue])
+            if residue > 0: 
+                tmp.append(x[0:residue])
             
             x = torch.cat(tmp, dim=0)
-        
+            
+        x_len = len(x)
         start_seg = random.randint(0, x_len - self.duration)
         
-        return x[start_seg : start_seg + self.utter_length] 
+        return x[start_seg : start_seg + self.duration] 
         

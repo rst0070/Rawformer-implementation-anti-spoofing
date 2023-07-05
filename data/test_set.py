@@ -40,6 +40,14 @@ class ASVspoof2021LA_eval(data.Dataset):
         return utter, label
     
     def adjustDuration(self, x):
+        """_summary_
+        use test data with specific duration from start of the audio 
+        Args:
+            x (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if len(x.shape) == 2:
             x = x.squeeze()
             
@@ -48,10 +56,9 @@ class ASVspoof2021LA_eval(data.Dataset):
             tmp = [x for i in range(0, (self.duration // x_len))]
             
             residue = self.duration % x_len
-            if residue > 0: tmp.append(x[0:residue])
+            if residue > 0: 
+                tmp.append(x[0:residue])
             
             x = torch.cat(tmp, dim=0)
         
-        start_seg = random.randint(0, x_len - self.duration)
-        
-        return x[start_seg : start_seg + self.utter_length] 
+        return x[0 : self.duration] 
