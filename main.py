@@ -74,10 +74,14 @@ def run(rank, world_size, port):
     
     best_eer = 100.
     for epoch in range(1, exp_config.max_epoch + 1):
+        
         logger.print(f'epoch: {epoch}')
         trainer.train()
         scheduler.step()
-        if epoch % 5 == 1:
+        
+        # -------------------- evaluation ----------------------- #
+        if epoch % 5 == 1 or epoch == exp_config.max_epoch:
+            
             eer = trainer.test()
             logger.print(f'EER: {eer}')
             logger.wandbLog({'EER_LA' : eer, 'epoch' : epoch})
