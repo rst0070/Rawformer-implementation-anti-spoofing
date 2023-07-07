@@ -4,6 +4,7 @@ import torchaudio
 import torch.utils.data as data
 import os
 import random
+from data.augmentation import WaveformAugmetation
 import config
 
 class ASVspoof2019LA(data.Dataset):
@@ -39,6 +40,11 @@ class ASVspoof2019LA(data.Dataset):
             file = os.path.join(sys_config.path_asv_spoof_2019_la_dev, f'{file}.flac')
             
             self.data_list.append((file, attack_type, label))
+
+        # --------------- settings for DA --------------- #
+        self.allow_data_augmentation = exp_config.allow_data_augmentation # True of False
+        self.waveform_augmentation = WaveformAugmetation(exp_config.data_augmentation)
+        
     
     def __len__(self):
         return len(self.data_list)
@@ -49,6 +55,9 @@ class ASVspoof2019LA(data.Dataset):
         utter, _ = torchaudio.load(utter)
         
         utter = self.adjustDuration(utter)
+        
+        if self.allow_data_augmentation:
+            utter = self.waveform_augmentation(utter)
         
         return utter, label
     
