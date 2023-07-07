@@ -41,9 +41,6 @@ class ASVspoof2019LA(data.Dataset):
             
             self.data_list.append((file, attack_type, label))
 
-        # --------------- settings for DA --------------- #
-        self.allow_data_augmentation = exp_config.allow_data_augmentation # True of False
-        self.waveform_augmentation = WaveformAugmetation(exp_config.data_augmentation)
         
     
     def __len__(self):
@@ -55,9 +52,6 @@ class ASVspoof2019LA(data.Dataset):
         utter, _ = torchaudio.load(utter)
         
         utter = self.adjustDuration(utter)
-        
-        if self.allow_data_augmentation:
-            utter = self.waveform_augmentation(utter)
         
         return utter, label
     

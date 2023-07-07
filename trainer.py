@@ -7,10 +7,12 @@ from scipy.interpolate import interp1d
 import torch.distributed as dist
 from ddp_util import all_gather
 import logger
+import config
+from data.augmentation import WaveformAugmetation
 
 class Trainer:
     
-    def __init__(self, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, logger:logger.Logger, device):
+    def __init__(self, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, logger:logger.Logger, device, exp_config=config.ExpConfig()):
         
         self.model = model
         self.loss_fn = loss_fn
@@ -22,6 +24,10 @@ class Trainer:
         self.logger = logger
         
         self.device = device
+        
+        # --------------- settings for DA --------------- #
+        self.allow_data_augmentation = exp_config.allow_data_augmentation # True of False
+        self.waveform_augmentation = WaveformAugmetation(exp_config.data_augmentation)
         
     def train(self):
         
@@ -37,12 +43,19 @@ class Trainer:
             self.optimizer.zero_grad()
             
             x, label = x.to(self.device), label.float().to(self.device)
+            
+            ###################### augmentation
+            if self.allow_data_augmentation:
+                x = self.waveform_augmentation(x)
+            
+            ###################### forward and backward
             x = self.model(x)
             loss = self.loss_fn(x, label)
             
             loss.backward()
             self.optimizer.step()
-        
+
+            ###################### logging
             loss = loss.detach()
             iter_count += 1
             loss_sum += loss

@@ -5,7 +5,7 @@ class SysConfig:
         
         self.wandb_disabled             = False
         self.wandb_project              = 'ASV-Spoofing'
-        self.wandb_name                 = 'Rawformer-L, no DA'
+        self.wandb_name                 = 'Rawformer-L, DA'
         self.wandb_entity               = 'rst0070'
         self.wandb_key                  = '8c8d77ae7f92de2b007ad093af722aaae5f31003'
         self.wandb_notes                = 'lr=1e-4, lr_min=1e-5, ts_hidden=80, rand_seed=1000, cosine-annealing-warm-restarts'
@@ -40,5 +40,5 @@ class ExpConfig:
         
         self.transformer_hidden         = 80
         
-        self.allow_data_augmentation    = False
+        self.allow_data_augmentation    = True
         self.data_augmentation          = ['ACN']# additive colored noise    
