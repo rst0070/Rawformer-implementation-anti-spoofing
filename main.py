@@ -73,7 +73,7 @@ def run(rank, world_size, port):
     trainer = Trainer(model=model, loss_fn=loss_fn, optimizer=optimizer, train_loader=train_loader, test_loader=test_loader, logger=logger, device=device)
     
     best_eer = 100.
-    miss_count = 0
+    # miss_count = 0
     for epoch in range(1, exp_config.max_epoch + 1):
         
         logger.print(f'epoch: {epoch}')
@@ -88,13 +88,13 @@ def run(rank, world_size, port):
             logger.wandbLog({'EER_LA' : eer, 'epoch' : epoch})
             
             if eer < best_eer:
-                miss_count = 0
+                # miss_count = 0
                 best_eer = eer
                 logger.wandbLog({'BestEER_LA' : eer, 'epoch' : epoch})
-            else:
-                miss_count += 1
-                if miss_count > 1:
-                    break
+            # else:
+            #     miss_count += 1
+            #     if miss_count > 1:
+            #         break
     
     destroy_process_group()
 

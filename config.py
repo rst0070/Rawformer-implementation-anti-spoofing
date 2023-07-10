@@ -5,10 +5,10 @@ class SysConfig:
         
         self.wandb_disabled             = False
         self.wandb_project              = 'ASV-Spoofing'
-        self.wandb_name                 = 'Rawformer-L, DA'
+        self.wandb_name                 = 'Rawformer-L, no DA'
         self.wandb_entity               = 'rst0070'
         self.wandb_key                  = '8c8d77ae7f92de2b007ad093af722aaae5f31003'
-        self.wandb_notes                = 'lr=1e-4, lr_min=1e-5, ts_hidden=80, rand_seed=1000, cosine-annealing-warm-restarts'
+        self.wandb_notes                = 'lr=8*1e-4, lr_min=1e-6, ts_hidden=80, rand_seed=1024, cosine-annealing-warm-restarts'
         
         self.path_label_asv_spoof_2019_la_train     = '/data/ASVspoof2019/LA/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt'
         self.path_label_asv_spoof_2019_la_dev       = '/data/ASVspoof2019/LA/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt'
@@ -24,7 +24,7 @@ class ExpConfig:
     
     def __init__(self):
         
-        self.random_seed                = 1000
+        self.random_seed                = 1024
         
         self.sample_rate                = 16000
         self.train_duration_sec         = 4
@@ -33,10 +33,10 @@ class ExpConfig:
         self.batch_size_train           = 32
         self.batch_size_test            = 40
         self.embedding_size             = 64
-        self.max_epoch                  = 50
+        self.max_epoch                  = 300
         
-        self.lr                         = 1e-4
-        self.lr_min                     = 1e-5
+        self.lr                         = 8 * 1e-4
+        self.lr_min                     = 1e-6
         
         self.transformer_hidden         = 80
         
