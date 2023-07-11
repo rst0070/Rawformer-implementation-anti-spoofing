@@ -8,6 +8,7 @@ import torch.nn as nn
 from trainer import Trainer
 from data.train_set import ASVspoof2019LA as TrainSet
 from data.test_set import ASVspoof2021LA_eval as TestSet
+from data.preprocess import PreEmphasis
 from models.rawformer import Rawformer_L, Rawformer_S, Rawformer_SE
 from logger import Logger
 import wandb
@@ -57,6 +58,7 @@ def run(rank, world_size, port):
     test_loader = getDataLoader(dataset=TestSet(), batch_size=exp_config.batch_size_test, num_workers=sys_config.num_workers)
     
     # ------------------------- set model ------------------------- #
+    preprocessor = PreEmphasis(device=device).to(device)
     model = DDP( Rawformer_L(device=device, sample_rate=exp_config.sample_rate, transformer_hidden=exp_config.transformer_hidden).to(device) )
     loss_fn = nn.BCELoss().to(device) #DDP is not needed when a module doesn't have any parameter that requires a gradient.
     
@@ -70,7 +72,7 @@ def run(rank, world_size, port):
     # )
     
     # ------------------------- trainer ------------------------- #
-    trainer = Trainer(model=model, loss_fn=loss_fn, optimizer=optimizer, train_loader=train_loader, test_loader=test_loader, logger=logger, device=device)
+    trainer = Trainer(preprocessor=preprocessor, model=model, loss_fn=loss_fn, optimizer=optimizer, train_loader=train_loader, test_loader=test_loader, logger=logger, device=device)
     
     best_eer = 100.
     # miss_count = 0

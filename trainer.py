@@ -12,8 +12,9 @@ from data.augmentation import WaveformAugmetation
 
 class Trainer:
     
-    def __init__(self, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, logger:logger.Logger, device, exp_config=config.ExpConfig()):
+    def __init__(self, preprocessor:nn.Module, model:nn.Module, loss_fn:nn.Module, optimizer, train_loader, test_loader, logger:logger.Logger, device, exp_config=config.ExpConfig()):
         
+        self.preprocessor = preprocessor
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
@@ -43,6 +44,7 @@ class Trainer:
             self.optimizer.zero_grad()
             
             x, label = x.to(self.device), label.float().to(self.device)
+            x = self.preprocessor(x)
             
             ###################### augmentation
             if self.allow_data_augmentation:
@@ -82,7 +84,8 @@ class Trainer:
             for x, label in pbar:
             
                 x, label = x.to(self.device), label.float().to(self.device)
-            
+                x = self.preprocessor(x)
+                
                 score = self.model(x)
 
                 scores.append(score.cpu())
