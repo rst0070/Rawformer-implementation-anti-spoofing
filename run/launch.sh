@@ -4,5 +4,5 @@ sudo docker run \
     --gpus all \
     --name rawformer_exp \
     --shm-size=50gb \
-    -v /home/shin/exp/DB:/data \
+    -v /home/rst/dataset/ASV_spoof:/data \
     rawformer:latest

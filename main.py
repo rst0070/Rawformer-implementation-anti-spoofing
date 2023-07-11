@@ -62,12 +62,12 @@ def run(rank, world_size, port):
     
     # ------------------------- optimizer ------------------------- #
     optimizer = torch.optim.AdamW(params=model.parameters(), lr=exp_config.lr)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer,
-        T_0=exp_config.max_epoch,
-        T_mult=1,
-        eta_min=exp_config.lr_min
-    )
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+    #     optimizer,
+    #     T_0=exp_config.max_epoch,
+    #     T_mult=1,
+    #     eta_min=exp_config.lr_min
+    # )
     
     # ------------------------- trainer ------------------------- #
     trainer = Trainer(model=model, loss_fn=loss_fn, optimizer=optimizer, train_loader=train_loader, test_loader=test_loader, logger=logger, device=device)
@@ -78,7 +78,7 @@ def run(rank, world_size, port):
         
         logger.print(f'epoch: {epoch}')
         trainer.train()
-        scheduler.step()
+        #scheduler.step()
         
         # -------------------- evaluation ----------------------- #
         if epoch % 5 == 1 or epoch == exp_config.max_epoch:
