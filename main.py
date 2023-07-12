@@ -59,7 +59,8 @@ def run(rank, world_size, port):
     
     # ------------------------- set model ------------------------- #
     preprocessor = PreEmphasis(device=device).to(device)
-    model = DDP( Rawformer_L(device=device, sample_rate=exp_config.sample_rate, transformer_hidden=exp_config.transformer_hidden).to(device) )
+    #model = DDP( Rawformer_L(device=device, sample_rate=exp_config.sample_rate, transformer_hidden=exp_config.transformer_hidden).to(device) )
+    model = DDP( Rawformer_SE(device=device, sample_rate=exp_config.sample_rate, transformer_hidden=exp_config.transformer_hidden).to(device) )
     loss_fn = nn.BCELoss().to(device) #DDP is not needed when a module doesn't have any parameter that requires a gradient.
     
     # ------------------------- optimizer ------------------------- #

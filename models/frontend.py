@@ -249,7 +249,7 @@ class Conv2DBlock_SE(nn.Module):
         self.conv2 = []
         for i in range(2, scale+1):
             self.conv2.append(nn.Sequential(
-                nn.Conv2d(in_channels=self.sub_channels, out_channels=self.sub_channels, kernel_size=(3, 7), padding=(1, 3)),
+                nn.Conv2d(in_channels=self.sub_channels, out_channels=self.sub_channels, kernel_size=(3, 9), padding=(1, 4)),
                 nn.BatchNorm2d(num_features=self.sub_channels),
                 relu
             ))

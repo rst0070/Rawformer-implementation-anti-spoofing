@@ -42,7 +42,7 @@ class Rawformer_L(nn.Module):
 
 class Rawformer_SE(nn.Module):
     
-    def __init__(self, device, transformer_hidden=2048, sample_rate: int = 16000):
+    def __init__(self, device, transformer_hidden=660, sample_rate: int = 16000):
         super(Rawformer_SE, self).__init__()
         self.front_end = Frontend_SE(sinc_kernel_size=128, sample_rate=sample_rate)
         
