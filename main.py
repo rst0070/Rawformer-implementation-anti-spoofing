@@ -26,9 +26,6 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
-    # Rawformer 속도 issue
-    #torch.backends.cudnn.deterministic = False
-    #torch.backends.cudnn.benchmark = True
 
 def getDataLoader(dataset, batch_size, num_workers):
     return data.DataLoader(dataset=dataset, 
